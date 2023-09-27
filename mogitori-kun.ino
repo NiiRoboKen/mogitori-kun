@@ -10,6 +10,7 @@
 // Function prototype
 void moveMecanum(int, int, int);
 void driveMotor(int, int, int);
+float degreeToRadian(int);
 
 USB Usb;
 
@@ -50,8 +51,8 @@ int motor6_pwm = 12;
 void setup() {
   Serial.begin(115200);
 #if !defined(__MIPSEL__)
-  // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
-  while (!Serial); #endif
+  while (!Serial); // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
+#endif
   if (Usb.Init() == -1) {
     Serial.print(F("\r\nOSC did not start"));
     while (1); // Halt
@@ -98,29 +99,75 @@ void loop() {
 
 // Control mecanum from coordinate values
 void moveMecanum(int Vx, int Vy, int Vr) {
-  // Calculate for each mecanum wheel
-  int wheel1 = Vx + Vy + Vr;  // left front
-  int wheel2 = -Vx + Vy - Vr; // right front
-  int wheel3 = Vx - Vy + Vr;  // center left
-  int wheel4 = -Vx - Vy - Vr; // center right
-  int wheel5 = Vx + Vy - Vr;  // back left
-  int wheel6 = -Vx + Vy + Vr; // back right
+  int wheel1, wheel2, wheel3, wheel4, wheel5, wheel6;
 
-  // Clip speed values to a range of -255 to 255 (prevents overflow)
-  wheel1 = constrain(wheel1, -255, 255);
-  wheel2 = constrain(wheel2, -255, 255);
-  wheel3 = constrain(wheel3, -255, 255);
-  wheel4 = constrain(wheel4, -255, 255);
-  wheel5 = constrain(wheel5, -255, 255);
-  wheel6 = constrain(wheel6, -255, 255);
+  // Whether to rotate or not (to avoid moving while rotating)
+  if (abs(Vr) > 30) {
+    wheel1 = Vr;
+    wheel2 = Vr;
+    wheel3 = Vr;
+    wheel4 = Vr;
+    wheel5 = Vr;
+    wheel6 = Vr;
 
-  // Controls each motor
-  driveMotor(motor1A, motor1B, wheel1);
-  driveMotor(motor2A, motor2B, wheel2);
-  driveMotor(motor3A, motor3B, wheel3);
-  driveMotor(motor4A, motor4B, wheel4);
-  driveMotor(motor5A, motor5B, wheel5);
-  driveMotor(motor6A, motor6B, wheel6);
+    // Clip speed values to a range of -255 to 255 (prevents overflow)
+    wheel1 = constrain(wheel1, -255, 255);
+    wheel2 = constrain(wheel2, -255, 255);
+    wheel3 = constrain(wheel3, -255, 255);
+    wheel4 = constrain(wheel4, -255, 255);
+    wheel5 = constrain(wheel5, -255, 255);
+    wheel6 = constrain(wheel6, -255, 255);
+
+    driveMotor(motor1_dir, motor1_pwm, wheel1);
+    driveMotor(motor2_dir, motor2_pwm, wheel2);
+    driveMotor(motor3_dir, motor3_pwm, wheel3);
+    driveMotor(motor4_dir, motor4_pwm, wheel4);
+    driveMotor(motor5_dir, motor5_pwm, wheel5);
+    driveMotor(motor6_dir, motor6_pwm, wheel6);
+  } else {
+    // Calculate for each mecanum wheel
+    wheel1 = Vy - Vx;  // left front
+    wheel2 = -Vy - Vx; // right front
+    wheel5 = Vy + Vx;  // back left
+    wheel6 = -Vy + Vx; // back right
+
+    // WARNNING: Need to modify here depending on how tires are attached.
+    /*
+    example: 
+      wheel3 = -Vy;
+      wheel4 = Vy;
+    */
+    if (abs(Vx) > abs(Vy)) {
+      wheel3 = -Vy;  // center left(omni)
+      wheel4 = -Vy;  // center right(omni)
+    } else {
+      wheel3 = 0;  // center left(omni)
+      wheel4 = 0;  // center right(omni)
+    }
+
+    // Clip speed values to a range of -255 to 255 (prevents overflow)
+    wheel1 = constrain(wheel1, -255, 255);
+    wheel2 = constrain(wheel2, -255, 255);
+    wheel3 = constrain(wheel3, -255, 255);
+    wheel4 = constrain(wheel4, -255, 255);
+    wheel5 = constrain(wheel5, -255, 255);
+    wheel6 = constrain(wheel6, -255, 255);
+
+    // Controls each motor
+    driveMotor(motor1_dir, motor1_pwm, wheel1);
+    driveMotor(motor2_dir, motor2_pwm, wheel2);
+    driveMotor(motor3_dir, motor3_pwm, wheel3);
+    driveMotor(motor4_dir, motor4_pwm, wheel4);
+    driveMotor(motor5_dir, motor5_pwm, wheel5);
+    driveMotor(motor6_dir, motor6_pwm, wheel6);
+  }
+}
+
+
+
+// Convert from degrees to radians
+float degreeToRadian(int degree) {
+  return (degree * 71) / 4068;
 }
 
 
