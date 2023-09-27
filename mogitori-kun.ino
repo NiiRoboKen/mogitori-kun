@@ -1,10 +1,139 @@
-void setup() {
-  // put your setup code here, to run once:
+#include <PS4BT.h>
+#include <usbhub.h>
 
+// Satisfy the IDE, which needs to see the include statment in the ino too.
+#ifdef dobogusinclude
+#include <spi4teensy3.h>
+#endif
+#include <SPI.h>
+
+// Function prototype
+void moveMecanum(int, int, int);
+void driveMotor(int, int, int);
+
+USB Usb;
+
+BTD Btd(&Usb); 
+/* You can create the instance of the PS4BT class in two ways */
+// This will start an inquiry and then pair with the PS4 controller - you only have to do this once
+// You will need to hold down the PS and Share button at the same time, the PS4 controller will then start to blink rapidly indicating that it is in pairing mode
+PS4BT PS4(&Btd, PAIR);
+
+// After that you can simply create the instance like so and then press the PS button on the device
+//PS4BT PS4(&Btd);
+
+
+// WARNNING: Specify here the motor to be used for mecanum
+/*
+  Front
+1       2
+        
+3       4
+
+5       6
+*/
+// WARNNING: Connect A to the red conductor
+// WARNNING: Connect B to the black conductor
+int motor1A = 1;
+int motor1B = 2;
+int motor2A = 3;
+int motor2B = 4;
+int motor3A = 5;
+int motor3B = 6;
+int motor4A = 7;
+int motor4B = 8;
+int motor5A = 9;
+int motor5B = 10;
+int motor6A = 11;
+int motor6B = 12;
+
+
+
+void setup() {
+  Serial.begin(115200);
+#if !defined(__MIPSEL__)
+  // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
+  while (!Serial); #endif
+  if (Usb.Init() == -1) {
+    Serial.print(F("\r\nOSC did not start"));
+    while (1); // Halt
+  }
+  Serial.print(F("\r\nPS4 Bluetooth Library Started"));
+
+  // motor 1
+  pinMode(motor1A, OUTPUT);
+  pinMode(motor1A, OUTPUT);
+  // motor 2
+  pinMode(motor2A, OUTPUT);
+  pinMode(motor2B, OUTPUT);
+  // motor 3
+  pinMode(motor3A, OUTPUT);
+  pinMode(motor4A, OUTPUT);
+  // motor 4
+  pinMode(motor4A, OUTPUT);
+  pinMode(motor4B, OUTPUT);
+  // motor 5
+  pinMode(motor5A, OUTPUT);
+  pinMode(motor5B, OUTPUT);
+  // motor 6
+  pinMode(motor6A, OUTPUT);
+  pinMode(motor6B, OUTPUT);
 }
+
+
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  Usb.Task();
 
+  if (PS4.connected()) {
+    // Receive controller input
+    int Vx = map(PS4.getAnalogHat(LeftHatX), 0, 255, -255, 255);
+    int Vy = map(PS4.getAnalogHat(LeftHatY), 0, 255, -255, 255);
+    int Vr = map(PS4.getAnalogHat(RightHatX), 0, 255, -255, 255);
+
+    // Control the mecanum using the received coordinate values
+    moveMecanum(Vx, Vy, Vr);
+  }
 }
 
+
+
+// Control mecanum from coordinate values
+void moveMecanum(int Vx, int Vy, int Vr) {
+  // Calculate for each mecanum wheel
+  int wheel1 = Vx + Vy + Vr;  // left front
+  int wheel2 = -Vx + Vy - Vr; // right front
+  int wheel3 = Vx - Vy + Vr;  // center left
+  int wheel4 = -Vx - Vy - Vr; // center right
+  int wheel5 = Vx + Vy - Vr;  // back left
+  int wheel6 = -Vx + Vy + Vr; // back right
+
+  // Clip speed values to a range of -255 to 255 (prevents overflow)
+  wheel1 = constrain(wheel1, -255, 255);
+  wheel2 = constrain(wheel2, -255, 255);
+  wheel3 = constrain(wheel3, -255, 255);
+  wheel4 = constrain(wheel4, -255, 255);
+  wheel5 = constrain(wheel5, -255, 255);
+  wheel6 = constrain(wheel6, -255, 255);
+
+  // Controls each motor
+  driveMotor(motor1A, motor1B, wheel1);
+  driveMotor(motor2A, motor2B, wheel2);
+  driveMotor(motor3A, motor3B, wheel3);
+  driveMotor(motor4A, motor4B, wheel4);
+  driveMotor(motor5A, motor5B, wheel5);
+  driveMotor(motor6A, motor6B, wheel6);
+}
+
+
+
+// Control motors
+void driveMotor(int pinA, int pinB, int speed) {
+  if (speed > 0) {
+    analogWrite(pinA, speed);
+    analogWrite(pinB, 0);
+  } else {
+    analogWrite(pinA, 0);
+    analogWrite(pinB, -speed);
+  }
+}
