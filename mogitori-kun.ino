@@ -34,20 +34,18 @@ PS4BT PS4(&Btd, PAIR);
 */
 // WARNNING: Connect A to the red conductor
 // WARNNING: Connect B to the black conductor
-int motor1A = 1;
-int motor1B = 2;
-int motor2A = 3;
-int motor2B = 4;
-int motor3A = 5;
-int motor3B = 6;
-int motor4A = 7;
-int motor4B = 8;
-int motor5A = 9;
-int motor5B = 10;
-int motor6A = 11;
-int motor6B = 12;
-
-
+int motor1_dir = 1;
+int motor1_pwm = 2;
+int motor2_dir = 3;
+int motor2_pwm = 4;
+int motor3_dir = 5;
+int motor3_pwm = 6;
+int motor4_dir = 7;
+int motor4_pwm = 8;
+int motor5_dir = 9;
+int motor5_pwm = 10;
+int motor6_dir = 11;
+int motor6_pwm = 12;
 
 void setup() {
   Serial.begin(115200);
@@ -61,23 +59,23 @@ void setup() {
   Serial.print(F("\r\nPS4 Bluetooth Library Started"));
 
   // motor 1
-  pinMode(motor1A, OUTPUT);
-  pinMode(motor1A, OUTPUT);
+  pinMode(motor1_dir, OUTPUT);
+  pinMode(motor1_pwm, OUTPUT);
   // motor 2
-  pinMode(motor2A, OUTPUT);
-  pinMode(motor2B, OUTPUT);
+  pinMode(motor2_dir, OUTPUT);
+  pinMode(motor2_pwm, OUTPUT);
   // motor 3
-  pinMode(motor3A, OUTPUT);
-  pinMode(motor4A, OUTPUT);
+  pinMode(motor3_dir, OUTPUT);
+  pinMode(motor4_pwm, OUTPUT);
   // motor 4
-  pinMode(motor4A, OUTPUT);
-  pinMode(motor4B, OUTPUT);
+  pinMode(motor4_dir, OUTPUT);
+  pinMode(motor4_pwm, OUTPUT);
   // motor 5
-  pinMode(motor5A, OUTPUT);
-  pinMode(motor5B, OUTPUT);
+  pinMode(motor5_dir, OUTPUT);
+  pinMode(motor5_pwm, OUTPUT);
   // motor 6
-  pinMode(motor6A, OUTPUT);
-  pinMode(motor6B, OUTPUT);
+  pinMode(motor6_dir, OUTPUT);
+  pinMode(motor6_pwm, OUTPUT);
 }
 
 
@@ -127,13 +125,13 @@ void moveMecanum(int Vx, int Vy, int Vr) {
 
 
 
-// Control motors
-void driveMotor(int pinA, int pinB, int speed) {
+// Control motors (0~255)
+void driveMotor(int pin_dir, int pin_pwm, int speed) {
   if (speed > 0) {
-    analogWrite(pinA, speed);
-    analogWrite(pinB, 0);
+    digitalWrite(pin_dir, LOW);
+    analogWrite(pin_pwm, speed);
   } else {
-    analogWrite(pinA, 0);
-    analogWrite(pinB, -speed);
+    digitalWrite(pin_dir, HIGH);
+    analogWrite(pin_pwm, speed);
   }
 }
