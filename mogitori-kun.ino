@@ -30,6 +30,8 @@ PS4BT PS4(&Btd, PAIR);
 1       2
         
 3       4
+        
+5       6
 */
 // WARNNING: Connect A to the red conductor
 // WARNNING: Connect B to the black conductor
