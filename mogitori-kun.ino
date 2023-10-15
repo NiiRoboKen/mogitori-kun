@@ -33,21 +33,33 @@ PS4BT PS4(&Btd, PAIR);
 */
 // WARNNING: Connect A to the red conductor
 // WARNNING: Connect B to the black conductor
-int motor1_dir = 43;
-int motor1_pwm = 2;
-int motor2_dir = 45;
-int motor2_pwm = 3;
-int motor3_dir = 6;
-int motor3_pwm = 7;
-int motor4_dir = 8;
-int motor4_pwm = 9;
+int motor1_dir = 29;
+int motor1_pwm = 9;
+int motor2_dir = 37;
+int motor2_pwm = 10;
+int motor3_dir = 28;
+int motor3_pwm = 8;
+int motor4_dir = 35;
+int motor4_pwm = 6;
+int motor5_dir = 36;
+int motor5_pwm = 4;
+int motor6_dir = 39;
+int motor6_pwm = 5;
 
-int relay12 = 0;
-int relay12_is_high = false;
-int relay34 = 0;
-int relay34_is_high = false;
-int relay56 = 0;
-int relay56_is_high = false;
+int arm_motor_pair1_dir = 48;
+int arm_motor_pair1_pwm = 46;
+int arm_motor_pair2_dir = 47;
+int arm_motor_pair2_pwm = 44;
+int arm_motor_pair3_dir = 34;
+int arm_motor_pair3_pwm = 45;
+
+
+int relay12 = 24;
+bool relay12_is_high = false;
+int relay34 = 26;
+bool relay34_is_high = false;
+int relay56 = 33;
+bool relay56_is_high = false;
 
 void setup() {
   Serial.begin(115200);
@@ -72,6 +84,16 @@ void setup() {
   // motor 4
   pinMode(motor4_dir, OUTPUT);
   pinMode(motor4_pwm, OUTPUT);
+
+  // arm_motor_pair1
+  pinMode(arm_motor_pair1_dir, OUTPUT);
+  pinMode(arm_motor_pair1_pwm, OUTPUT);
+  // arm_motor_pair2
+  pinMode(arm_motor_pair2_dir, OUTPUT);
+  pinMode(arm_motor_pair2_pwm, OUTPUT);
+  // arm_motor_pair3
+  pinMode(arm_motor_pair3_dir, OUTPUT);
+  pinMode(arm_motor_pair3_pwm, OUTPUT);
 
   // relay12
   pinMode(relay12, OUTPUT);
@@ -103,6 +125,25 @@ void loop() {
         relayToggle(relay56, &relay56_is_high);
       }
 
+      if (PS4.getButtonPress(UP)) {
+        driveMotor(arm_motor_pair1_dir, arm_motor_pair1_pwm, 180);
+      } 
+      if (PS4.getButtonPress(DOWN)) {
+        driveMotor(arm_motor_pair1_dir, arm_motor_pair1_pwm, -180);
+      } 
+      if (PS4.getButtonPress(R1)) {
+        driveMotor(arm_motor_pair3_dir, arm_motor_pair3_pwm, 180);
+      }
+      if (PS4.getAnalogButton(R2) < 180) {
+        driveMotor(arm_motor_pair1_dir, arm_motor_pair1_pwm, -180);
+      }
+      if (PS4.getButtonPress(L1)) {
+        driveMotor(arm_motor_pair2_dir, arm_motor_pair2_pwm, 180);
+      }
+      if (PS4.getAnalogButton(L2) < 180) {
+        driveMotor(arm_motor_pair2_dir, arm_motor_pair2_pwm, -180);
+      }
+
       // If the input is too small, ignore it(Input range is -30 to 30)
       if (abs(Vx) < 30 && abs(Vy) < 30 && abs(Vr) < 30) {
         continue;
@@ -118,15 +159,68 @@ void loop() {
 
 // Control mecanum from coordinate values
 void moveMecanum(int Vx, int Vy, int Vr) {
-    wheel1 = Vy - Vx;  // left front
-    wheel2 = -Vy - Vx; // right front
-    wheel3 = Vy + Vx;  // back left
-    wheel4 = -Vy + Vx; // back right
+  int wheel1, wheel2, wheel3, wheel4, wheel5, wheel6;
+
+  // Whether to rotate or not (to avoid moving while rotating)
+  if (abs(Vr) > 30) {
+    wheel1 = Vr;
+    wheel2 = Vr;
+    wheel3 = Vr;
+    wheel4 = Vr;
+    wheel5 = Vr;
+    wheel6 = Vr;
+
+    // Clip speed values to a range of -255 to 255 (prevents overflow)
+    wheel1 = constrain(wheel1, -255, 255);
+    wheel2 = constrain(wheel2, -255, 255);
+    wheel3 = constrain(wheel3, -255, 255);
+    wheel4 = constrain(wheel4, -255, 255);
+    wheel5 = constrain(wheel5, -255, 255);
+    wheel6 = constrain(wheel6, -255, 255);
 
     driveMotor(motor1_dir, motor1_pwm, wheel1);
     driveMotor(motor2_dir, motor2_pwm, wheel2);
     driveMotor(motor3_dir, motor3_pwm, wheel3);
     driveMotor(motor4_dir, motor4_pwm, wheel4);
+    driveMotor(motor5_dir, motor5_pwm, wheel5);
+    driveMotor(motor6_dir, motor6_pwm, wheel6);
+  } else {
+    // Calculate for each mecanum wheel
+    wheel1 = Vy + Vx;  // left front
+    wheel2 = Vy - Vx; // right front
+    wheel5 = Vy + Vx;  // back left
+    wheel6 = Vy - Vx; // back right
+
+    // WARNNING: Need to modify here depending on how tires are attached.
+    /*
+    example: 
+      wheel3 = -Vy;
+      wheel4 = Vy;
+    */
+    if (abs(Vx) > abs(Vy)) {
+      wheel3 = -Vy;  // center left(omni)
+      wheel4 = -Vy;  // center right(omni)
+    } else {
+      wheel3 = 0;  // center left(omni)
+      wheel4 = 0;  // center right(omni)
+    }
+
+    // Clip speed values to a range of -255 to 255 (prevents overflow)
+    wheel1 = constrain(wheel1, -255, 255);
+    wheel2 = constrain(wheel2, -255, 255);
+    wheel3 = constrain(wheel3, -255, 255);
+    wheel4 = constrain(wheel4, -255, 255);
+    wheel5 = constrain(wheel5, -255, 255);
+    wheel6 = constrain(wheel6, -255, 255);
+
+    // Controls each motor
+    driveMotor(motor1_dir, motor1_pwm, wheel1);
+    driveMotor(motor2_dir, motor2_pwm, wheel2);
+    driveMotor(motor3_dir, motor3_pwm, wheel3);
+    driveMotor(motor4_dir, motor4_pwm, wheel4);
+    driveMotor(motor5_dir, motor5_pwm, wheel5);
+    driveMotor(motor6_dir, motor6_pwm, wheel6);
+  }
 }
 
 
